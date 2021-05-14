@@ -8,56 +8,54 @@ contract Birthday {
     
     using Address for address payable;
     
-    uint256 private _present ;
     address private _owner;
     uint256 private _birthday;
 
-    constructor(address owner_, uint256 birthday_) {
+    event Offered(address indexed sender, uint256 value);
+
+    constructor(address owner_, uint256 delay_) {
         _owner = owner_;
-        _birthday = birthday_;
+        _birthday = block.timestamp + delay_ * 1 days;
     }
     
     modifier onlyOwner {
-        require(msg.sender == _owner, "Sorry, this isn't your birthday!");
+        require(msg.sender == _owner, "Birthday: Sorry, this is not your birthday!");
         _;
     }
     
     modifier onTime {
-        require(_birthday <= block.timestamp, "Not your B-Day yet!");
+        require(_birthday <= block.timestamp, "Birthday: Not your B-Day yet!");
         _;
     }
     
     modifier notOwner {
-        require(msg.sender != _owner, "Looks like you have nothing to do here!");
+        require(msg.sender != _owner, "Birthday: You are not allowed to use this functionality!");
         _;
     }
     
     function offer() external payable {
-        _present += msg.value;
+        emit Offered(msg.sender, msg.value);
     }
     
     receive() external payable {
-        _present += msg.value;
+        emit Offered(msg.sender, msg.value);
     }
     
-    fallback() external {
-        
-    }
     
     function viewPresent() public view notOwner returns (uint256) {
-        return _present;
+        return address(this).balance;
     }
     
-    function getPresent() public payable onlyOwner onTime {
-        payable(msg.sender).sendValue(_present);
-        _present = 0;
+    function getPresent() public onlyOwner onTime {
+        payable(msg.sender).sendValue(address(this).balance);
     }
     
     function getBDay() public view returns (uint256) {
         return _birthday; 
     }
     
-    function getTime() public view returns (uint256) {
-        return block.timestamp; 
+    function getRemainingTime() public view returns (uint256) {
+        require(_birthday >= block.timestamp, "Birthday: Birthday has past.");
+        return _birthday - block.timestamp; 
     }
 }
